@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from itertools import count
 import pandas as pd
-import datetime
+from datetime import datetime
 
 
 def initialize_serial():
@@ -33,7 +33,7 @@ def results_to_excel(temp, res, output_filename):
     df = pd.DataFrame({'time': [current_time], 'temperature': temp, 'resistance': res})
     writer = pd.ExcelWriter(output_filename, engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Results', index=False)
-    writer.save()
+    writer.close()
 
 # This function is called periodically by FuncAnimation
 def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
@@ -91,7 +91,7 @@ def get_output_filename():
     # Format current datetime as string
     time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
     # Construct output file name with datetime
-    output_filename = f"{time_str}.csv"
+    output_filename = f"{time_str}.xlsx"
     return output_filename
 
 
