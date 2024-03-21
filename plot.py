@@ -2,7 +2,7 @@ import serial
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from itertools import count
-import pandas as pd
+import csv
 from datetime import datetime
 import os
 
@@ -28,25 +28,21 @@ def read_latest_from_port(serial_connection):
 
 def results_to_excel(temp, res, output_filename):
     # Check if the file already exists
-    if not os.path.exists(output_filename):
-        # If the file doesn't exist, create a new dataframe with column names
-        df = pd.DataFrame(columns=['time', 'temperature', 'resistance'])
-    else:
-        # If the file exists, load the existing dataframe
-        df = pd.read_excel(output_filename)
-
-    # Get current datetime
-    current_time = datetime.now()
-
-    # Create a new row with the current data
-    new_row = {'time': current_time, 'temperature': temp, 'resistance': res}
-    # Append the new row to the dataframe
-    df = df.append(new_row, ignore_index=True)
-
-    # Write the dataframe to the Excel file
-    with pd.ExcelWriter(output_filename, mode='w', engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Results', index=False)
-    writer.close()
+    file_exists = os.path.exists(output_filename)
+    
+    # Open the file in append mode if it exists or write mode if it does not
+    with open(output_filename, mode='a' if file_exists else 'w', newline='') as file:
+        writer = csv.writer(file)
+        
+        # If the file doesn't exist, write the header
+        if not file_exists:
+            writer.writerow(['time', 'temperature', 'resistance'])
+        
+        # Get current datetime
+        current_time = datetime.now()
+        
+        # Write the data row
+        writer.writerow([current_time, temp, res])
 
 # This function is called periodically by FuncAnimation
 def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
@@ -73,7 +69,7 @@ def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filena
         print(f"Failed to convert data1 to float: {data1}")
 
     # Skip non-positive values if using a log scale
-    if y1 <= 10 or y2 <= 10:
+    if y1 <= 10 or y2 <= 10 or y1 > 100 or y2 > 200:
         return
 
     results_to_excel(y1,y2, output_filename)
@@ -104,7 +100,7 @@ def get_output_filename():
     # Format current datetime as string
     time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
     # Construct output file name with datetime
-    output_filename = f"{time_str}.xlsx"
+    output_filename = f"{time_str}.csv"
     return output_filename
 
 
