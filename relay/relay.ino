@@ -31,7 +31,7 @@ bool isOn = false;
 double Setpoint, Output;
 // Specify the links and initial tuning parameters
 // double Kp=150, Ki=120, Kd=20;
-double Kp = 100, Ki = 37, Kd = 32;
+double Kp = 60, Ki = 37, Kd = 32;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 void setup() {
@@ -49,13 +49,18 @@ void setup() {
   // relay
   pinMode(relay_pin, OUTPUT);
 
-  Setpoint = 41.0;  // Desired temperature
+  Setpoint = 35.0;  // Desired temperature
 
   myPID.SetMode(AUTOMATIC);       // Turn the PID on
-  myPID.SetOutputLimits(0, 100);  // Limits output to between 0 and 100%
+  myPID.SetOutputLimits(0, 255);  // Limits output to between 0 and 100%
 }
 
 void loop() {
+  if (Serial.available() > 0) {
+    Setpoint = Serial.parseFloat();
+    Serial.print("New Setpoint: ");
+    Serial.println(Setpoint);
+  }
 
   // #Serial.print(Setpoint - 0.5);
   // Serial.print(",");
@@ -71,11 +76,10 @@ void loop() {
   myPID.Compute();  // Computes the PID output
 
 
-  int pwmValue = map(Output, 0, 100, 0, 255);
-
   // Apply PWM to the transistor gate/base
   if (t > 0) {
-    analogWrite(relay_pin, pwmValue);
+    analogWrite(relay_pin, Output);
+
   } else {
     analogWrite(relay_pin, 0);
   }

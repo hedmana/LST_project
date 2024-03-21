@@ -50,7 +50,7 @@ def animate(i):
         print(f"Failed to convert data1 to float: {data1}")
 
     # Skip non-positive values if using a log scale
-    if y1 < 0 or y2 < 0:
+    if y1 <= 0 or y2 <= 0:
         return
     
     print(y1, y2)
@@ -69,8 +69,8 @@ def animate(i):
     ax2.plot(x_data, y2_data, 'b-')
     
     # Optionally, set y-axis labels
-    ax1.set_ylabel('First Serial Data', color='g')
-    ax2.set_ylabel('Second Serial Data', color='b')
+    ax1.set_ylabel('Resistance', color='g')
+    ax2.set_ylabel('Temp', color='b')
 
     
 
@@ -81,3 +81,5 @@ plt.show()
 
 # Don't forget to close the serial port when you're done
 ser.close()
+if ser2:
+    ser2.close()
