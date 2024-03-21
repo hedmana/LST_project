@@ -4,6 +4,7 @@ import matplotlib.animation as animation
 from itertools import count
 import pandas as pd
 from datetime import datetime
+import os
 
 
 def initialize_serial():
@@ -26,13 +27,25 @@ def read_latest_from_port(serial_connection):
 
 
 def results_to_excel(temp, res, output_filename):
+    # Check if the file already exists
+    if not os.path.exists(output_filename):
+        # If the file doesn't exist, create a new dataframe with column names
+        df = pd.DataFrame(columns=['time', 'temperature', 'resistance'])
+    else:
+        # If the file exists, load the existing dataframe
+        df = pd.read_excel(output_filename)
+
     # Get current datetime
     current_time = datetime.now()
 
-    # Create a Pandas dataframe from the data and write it to an Excel file
-    df = pd.DataFrame({'time': [current_time], 'temperature': temp, 'resistance': res})
-    writer = pd.ExcelWriter(output_filename, engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Results', index=False)
+    # Create a new row with the current data
+    new_row = {'time': current_time, 'temperature': temp, 'resistance': res}
+    # Append the new row to the dataframe
+    df = df.append(new_row, ignore_index=True)
+
+    # Write the dataframe to the Excel file
+    with pd.ExcelWriter(output_filename, mode='w', engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Results', index=False)
     writer.close()
 
 # This function is called periodically by FuncAnimation
