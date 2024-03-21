@@ -2,4 +2,5 @@
 Introduction to Temperature Sensing Platform Project
 
 plot.py reads both temperature and resistance and plots them
+
 relay.ino controls the arduino for heating/cooling and temperature measurement
