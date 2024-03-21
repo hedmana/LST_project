@@ -2,7 +2,8 @@ import serial
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from itertools import count
-
+import pandas as pd
+import datetime
 
 
 def initialize_serial():
@@ -24,9 +25,18 @@ def read_latest_from_port(serial_connection):
     return reading
 
 
+def results_to_excel(temp, res, output_filename):
+    # Get current datetime
+    current_time = datetime.now()
+
+    # Create a Pandas dataframe from the data and write it to an Excel file
+    df = pd.DataFrame({'time': [current_time], 'temperature': temp, 'resistance': res})
+    writer = pd.ExcelWriter(output_filename, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='Results', index=False)
+    writer.save()
 
 # This function is called periodically by FuncAnimation
-def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2):
+def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
     # Read data from the first serial port
     data1 = read_latest_from_port(ser)
     # Read data from the second serial port
@@ -52,7 +62,9 @@ def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2):
     # Skip non-positive values if using a log scale
     if y1 < 0 or y2 < 0:
         return
-    
+
+    results_to_excel(y1,y2, output_filename)
+
     print(y1, y2)
 
     x = next(index)
@@ -74,12 +86,21 @@ def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2):
 
     
 
-
+def get_output_filename():
+    current_time = datetime.now()
+    # Format current datetime as string
+    time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+    # Construct output file name with datetime
+    output_filename = f"{time_str}.xlsx"
+    return output_filename
 
 
 def main():
     # open serial ports
     ser, ser2 = initialize_serial()
+
+    #get outputfile name
+    output_filename = get_output_filename()
 
     # Initialize matplotlib for live plotting
     fig, ax1 = plt.subplots()
@@ -88,7 +109,7 @@ def main():
     index = count()
 
     # Create an animation by repeatedly calling the animate function every 1000 ms
-    ani = animation.FuncAnimation(fig, animate, fargs= [ser, ser2, index, x_data, y1_data, y2_data, ax1, ax2], interval=100)
+    ani = animation.FuncAnimation(fig, animate, fargs= [ser, ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename], interval=100)
 
     plt.show()
 
