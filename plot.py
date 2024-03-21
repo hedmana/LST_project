@@ -3,13 +3,18 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from itertools import count
 
-# Set up the serial connection (adjust the port and baud rate according to your setup)
-ser = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial 
-try:
-  ser2 = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
-except Exception:
-    ser2 = None
-    print("error")
+
+
+def initialize_serial():
+    # Set up the serial connection (adjust the port and baud rate according to your setup)
+    ser = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
+    try:
+        ser2 = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
+    except Exception:
+        ser2 = None
+        print("error")
+
+    return ser, ser2
 
 
 # This generator function reads from the serial port
@@ -18,15 +23,10 @@ def read_latest_from_port(serial_connection):
     reading = serial_connection.readline().decode('utf-8').strip()  # Then read the next available data
     return reading
 
-# Initialize matplotlib for live plotting
-fig, ax1 = plt.subplots()
-ax2 = ax1.twinx()  # Create a second y-axis
 
-x_data, y1_data, y2_data = [], [], []
-index = count()
 
 # This function is called periodically by FuncAnimation
-def animate(i):
+def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2):
     # Read data from the first serial port
     data1 = read_latest_from_port(ser)
     # Read data from the second serial port
@@ -50,7 +50,7 @@ def animate(i):
         print(f"Failed to convert data1 to float: {data1}")
 
     # Skip non-positive values if using a log scale
-    if y1 <= 0 or y2 <= 0:
+    if y1 <= 10 or y2 <= 10:
         return
     
     print(y1, y2)
@@ -72,14 +72,27 @@ def animate(i):
     ax1.set_ylabel('Resistance', color='g')
     ax2.set_ylabel('Temp', color='b')
 
-    
 
-# Create an animation by repeatedly calling the animate function every 1000 ms
-ani = animation.FuncAnimation(fig, animate, interval=100)
 
-plt.show()
+def main():
+    # open serial ports
+    ser, ser2 = initialize_serial()
 
-# Don't forget to close the serial port when you're done
-ser.close()
-if ser2:
-    ser2.close()
+    # Initialize matplotlib for live plotting
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()  # Create a second y-axis
+    x_data, y1_data, y2_data = [], [], []
+    index = count()
+
+    # Create an animation by repeatedly calling the animate function every 1000 ms
+    ani = animation.FuncAnimation(fig, animate, fargs= [ser, ser2, index, x_data, y1_data, y2_data, ax1, ax2], interval=100)
+
+    plt.show()
+
+    # Don't forget to close the serial port when you're done
+    ser.close()
+    if ser2:
+      ser2.close()
+
+if __name__ == "__main__":
+    main()

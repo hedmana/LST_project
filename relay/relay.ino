@@ -80,6 +80,10 @@ void loop() {
   if (t > 0) {
     analogWrite(relay_pin, Output);
 
+    if (abs(t-Setpoint) < 0.1) {
+      if (Setpoint == 40) {Setpoint = 30;}
+      else {Setpoint = 40;}
+    }
   } else {
     analogWrite(relay_pin, 0);
   }
