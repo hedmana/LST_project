@@ -28,11 +28,51 @@ const long interval = 1000;  // Interval at which to check/update relay status (
 bool isOn = false;
 
 // PID setup
-double Setpoint, Output;
+double Setpoint = 40;
+double Output;
 // Specify the links and initial tuning parameters
 // double Kp=150, Ki=120, Kd=20;
 double Kp = 60, Ki = 37, Kd = 32;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+
+int menuChoice;
+String stringVariable;
+
+int lowerRange;
+int upperRange;
+
+
+void parseTemperatureRange(String inputString) {
+  // Ensure the String is not empty
+  if (inputString.length() > 0) {
+    // Find the index of the comma
+    int commaIndex = inputString.indexOf(',');
+
+    // Check if the comma exists in the string
+    if (commaIndex != -1) {
+      // Extract the lower range substring before the comma
+      String lowerRangeString = inputString.substring(0, commaIndex);
+      // Extract the upper range substring after the comma
+      String upperRangeString = inputString.substring(commaIndex + 1);
+
+      // Convert the substrings to integers
+      lowerRange = lowerRangeString.toInt();
+      upperRange = upperRangeString.toInt();
+
+      // Print the lower and upper ranges
+      Serial.print("Lower Range: ");
+      Serial.println(lowerRange);
+      Serial.print("Upper Range: ");
+      Serial.println(upperRange);
+    } else {
+      // Handle the case when no comma is found
+      Serial.println("Error: No comma found in the input");
+    }
+  } else {
+    // Handle the case when the input string is empty
+    Serial.println("Error: Input string is empty");
+  }
+}
 
 void setup() {
   // temp
@@ -53,15 +93,67 @@ void setup() {
 
   myPID.SetMode(AUTOMATIC);       // Turn the PID on
   myPID.SetOutputLimits(0, 255);  // Limits output to between 0 and 100%
+
+
+  Serial.println("Available modes:");
+  Serial.println("1. Temperature cycles between 30-40C");
+  Serial.println("2. Manual temp entry");
+  Serial.println("3. Ace mode.");
+  Serial.println();
+
+  Serial.println("Enter the which mode to execute: ");
+
+  while (Serial.available() == 0) {
+  }
+
+  menuChoice = Serial.parseInt();
+
+  // Clear the serial buffer
+  while (Serial.available() > 0) {
+    char junk = Serial.read();
+  }
+
+  switch (menuChoice) {
+    case 1:
+      // temp sensor code goes here
+      Serial.print("This mode runs just temperature temperature cycles.");
+      break;
+
+    case 2:
+      // humidity sensor code goes here
+      Serial.println("2 pressed");
+
+      Serial.println("Enter temperature range (for example 25,30)");
+
+      while (Serial.available() == 0) {
+      }
+      
+
+      stringVariable = Serial.readString();
+
+      Serial.print("Given range was: ");
+      Serial.println(stringVariable);
+      Serial.println("Converting the range into integers...");
+      Serial.println();
+
+      // parse
+      parseTemperatureRange(stringVariable);
+
+
+      break;
+
+    case 3:
+      // pressure sensor code goes here
+      Serial.print("3 pressed");
+
+      break;
+
+    default:
+      Serial.println("Please choose a valid selection");
+  }
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    Setpoint = Serial.parseFloat();
-    Serial.print("New Setpoint: ");
-    Serial.println(Setpoint);
-  }
-
   // #Serial.print(Setpoint - 0.5);
   // Serial.print(",");
   // Serial.print(Setpoint + 0.5);
@@ -80,9 +172,12 @@ void loop() {
   if (t > 0) {
     analogWrite(relay_pin, Output);
 
-    if (abs(t-Setpoint) < 0.1) {
-      if (Setpoint == 40) {Setpoint = 30;}
-      else {Setpoint = 40;}
+    if (abs(t - Setpoint) < 0.1) {
+      if (Setpoint == 40) {
+        Setpoint = 30;
+      } else {
+        Setpoint = 40;
+      }
     }
   } else {
     analogWrite(relay_pin, 0);
