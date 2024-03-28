@@ -9,9 +9,9 @@ import os
 
 def initialize_serial():
     # Set up the serial connection (adjust the port and baud rate according to your setup)
-    ser = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
+    ser = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial COM6
     try:
-        ser2 = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
+        ser2 = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port COM4
     except Exception:
         ser2 = None
         print("error")

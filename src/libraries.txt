@@ -1,0 +1,3 @@
+pip install serial
+pip install matplotlib
+pip install pandas
