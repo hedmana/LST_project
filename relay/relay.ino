@@ -2,45 +2,36 @@
 #include "DFRobot_BMP280.h"
 #include "Wire.h"
 #include <PID_v1_bc.h>
+#include <time.h>
 
 
-
+// temperature sensor
 typedef DFRobot_BMP280_IIC BMP;  // ******** use abbreviations instead of full names ********
 BMP bmp(&Wire, BMP::eSdoLow);
-
 double t;
 
-
-
-// relay
+// Transistor
 const int relay_pin = 11;
-int relay_state = LOW;
 
 
-
-// Temperature thresholds for duty cycle calculation
-const float tempMin = 20.0;  // Minimum temperature for 0% duty cycle
-const float tempMax = 30.0;  // Maximum temperature for 100% duty cycle
-
-// Timing
-unsigned long lastTime = 0;
-const long interval = 1000;  // Interval at which to check/update relay status (in milliseconds)
-bool isOn = false;
 
 // PID setup
-double Setpoint = 40;
+double Setpoint;
 double Output;
-// Specify the links and initial tuning parameters
-// double Kp=150, Ki=120, Kd=20;
 double Kp = 60, Ki = 37, Kd = 32;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
+// Parameters for temperature control logic
 int menuChoice;
 String stringVariable;
-
 int lowerRange;
 int upperRange;
 
+// mode 2 logic
+time_t current_time;
+time_t last_transition_time = time(NULL);
+int transition_interval = 30; //seconds
+static int direction = 1; // increase of decrease temperature?
 
 void parseTemperatureRange(String inputString) {
   // Ensure the String is not empty
@@ -88,20 +79,15 @@ void setup() {
 
   // relay
   pinMode(relay_pin, OUTPUT);
-
+  //
   Setpoint = 35.0;  // Desired temperature
 
   myPID.SetMode(AUTOMATIC);       // Turn the PID on
   myPID.SetOutputLimits(0, 255);  // Limits output to between 0 and 100%
 
 
-  Serial.println("Available modes:");
-  Serial.println("1. Temperature cycles between 30-40C");
-  Serial.println("2. Manual temp entry");
-  Serial.println("3. Ace mode.");
-  Serial.println();
-
-  Serial.println("Enter the which mode to execute: ");
+  // select which mode to execute and get temperature range
+  Serial.println("Select mode");
 
   while (Serial.available() == 0) {
   }
@@ -115,79 +101,94 @@ void setup() {
 
   switch (menuChoice) {
     case 1:
-      // temp sensor code goes here
-      Serial.print("This mode runs just temperature temperature cycles.");
+      Serial.println("Mode 1 selected.");
       break;
 
     case 2:
-      // humidity sensor code goes here
-      Serial.println("2 pressed");
+      Serial.println("Mode 2 selected.");
+      break;
 
-      Serial.println("Enter temperature range (for example 25,30)");
+    case 3:
+      Serial.println("Mode 3 selected.");
+      break;
 
-      while (Serial.available() == 0) {
+    default:
+      Serial.println("invalid choice, selecting 3");
+      menuChoice = 3;
+  }
+
+  while (Serial.available() == 0) {
+  }
+
+
+  stringVariable = Serial.readString();
+
+  Serial.print("Given range was: ");
+  Serial.println(stringVariable);
+  Serial.println();
+
+  // parse
+  parseTemperatureRange(stringVariable);
+  Setpoint = lowerRange;
+}
+
+void loop() {
+  // read temperature
+  t = bmp.getTemperature();
+  // send temperature to python
+  Serial.println(t);
+
+
+
+  // select what to do based on which mode is running
+  switch (menuChoice) {
+    case 1:
+      // cycle between the upper and and lower range limits
+      if (abs(t - Setpoint) < 0.1) {
+        if (Setpoint == upperRange) {
+          Setpoint = lowerRange;
+        } else {
+          Setpoint = upperRange;
+        }
       }
-      
+      break;
 
-      stringVariable = Serial.readString();
+    case 2:
+      // Transition temperature in steps with a pause between each step
+        current_time = time(NULL);
 
-      Serial.print("Given range was: ");
-      Serial.println(stringVariable);
-      Serial.println("Converting the range into integers...");
-      Serial.println();
+        // Check if it's time to transition to the next setpoint
+        if (current_time - last_transition_time >= transition_interval) {
+            // Move to the next setpoint
+            Setpoint += direction; // increase or decrease the setpoint by a degree
+            last_transition_time = current_time;
 
-      // parse
-      parseTemperatureRange(stringVariable);
-
+            // Reverse direction if reaching upplower or er range
+            if (Setpoint >= upperRange){
+                direction = -1;
+            }
+            if (Setpoint <= lowerRange){
+              direction = 1;
+            }
+        }
 
       break;
 
     case 3:
-      // pressure sensor code goes here
-      Serial.print("3 pressed");
-
+      Setpoint = lowerRange;
       break;
-
-    default:
-      Serial.println("Please choose a valid selection");
   }
-}
 
-void loop() {
-  // #Serial.print(Setpoint - 0.5);
-  // Serial.print(",");
-  // Serial.print(Setpoint + 0.5);
-  // Serial.print(",");
-  t = bmp.getTemperature();
-  Serial.println(t);
-
-
-  unsigned long currentTime = millis();
-  unsigned long onTime, offTime;
-
-  myPID.Compute();  // Computes the PID output
+  // PID: compute Output based on Setpoint and t
+  myPID.Compute();
 
 
   // Apply PWM to the transistor gate/base
   if (t > 0) {
     analogWrite(relay_pin, Output);
-
-    if (abs(t - Setpoint) < 0.1) {
-      if (Setpoint == 40) {
-        Setpoint = 30;
-      } else {
-        Setpoint = 40;
-      }
-    }
   } else {
     analogWrite(relay_pin, 0);
   }
-
-
-  // Serial.print("Temp: ");
-  // Serial.print(t);
-  // Serial.print(" C, PID Output: ");
-  // Serial.println(Output);
 
   delay(500);
 }

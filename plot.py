@@ -10,16 +10,17 @@ from time import sleep
 
 def initialize_serial():
     # Set up the serial connection (adjust the port and baud rate according to your setup)
-    #ser = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
-    ser = serial.Serial('COM4', 115200) # ser is resistance
+    #ser_res = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
+    ser_res = serial.Serial('COM4', 115200) # ser_res is resistance
+    #ser_res = None
     try:
-        #ser2 = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
-        ser2 = serial.Serial('COM9', 115200) # ser2 is
+        #ser_temp = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
+        ser_temp = serial.Serial('COM14', 115200) # ser_temp is temperature
     except Exception:
-        ser2 = None
+        ser_temp = None
         print("error")
 
-    return ser, ser2
+    return ser_res, ser_temp
 
 
 # This generator function reads from the serial port
@@ -48,14 +49,14 @@ def results_to_excel(temp, res, output_filename):
         writer.writerow([current_time, temp, res])
 
 # This function is called periodically by FuncAnimation
-def animate(i,ser,ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
+def animate(i, ser_res, ser_temp, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
     print("animate begins")
     # Read data from the first serial port
-    data1 = read_latest_from_port(ser)
+    data1 = read_latest_from_port(ser_res)
     print("data1 ", data1)
     # Read data from the second serial port
-    if (ser2):
-      data2 = read_latest_from_port(ser2)
+    if (ser_temp):
+      data2 = read_latest_from_port(ser_temp)
       print("data2 ",data2 )
     else: 
         data2 = "0,0"
@@ -114,31 +115,44 @@ def get_output_filename():
     return output_filename
 
 
-def give_arduino_parameters(ser):
-    print("Giving Arduino some parameters:")
+def give_arduino_parameters(ser, mode, heat_cycle_range):
+    print("Giving Arduino some parameters...")
 
     # Check if there is data available in the input buffer
     text = ""
-    while text != "Enter the which mode to execute:":
+    while text != "Select mode":
         # Read and print the available data
         text = ser.readline().decode('utf-8').strip()  # Read a line and decode it
-        print(text)
+        print("Arduino: " + text)
+
 
     # Send parameters to the Arduino
-    ser.write(b'1\n')  # For example, sending '2' to the Arduino
+    #ser.write(b'1\n')  # For example, sending '2' to the Arduino
+    ser.write(f'{mode}\n'.encode('utf-8'))
+
+    # verify which mode was selected
+    text = ser.readline().decode('utf-8').strip()  # Read a line and decode it
+    print("Arduino: " + text)
+
+    # pass the range
+    ser.write(f'{heat_cycle_range[0]},{heat_cycle_range[1]}\n'.encode('utf-8'))
 
     text = ser.readline().decode('utf-8').strip()  # Read a line and decode it
-    print(text)
+    print("Arduino: " +text)
     text = ser.readline().decode('utf-8').strip()  # Read a line and decode it
     print(text)
     text = ser.readline().decode('utf-8').strip()  # Read a line and decode it
     print(text)
+    print("Arduino initialization complete.")
 
-def just_read_the_serial(ser,ser2,output_filename):
-    data1 = read_latest_from_port(ser)
+
+
+def just_read_the_serial(ser_res, ser_temp, output_filename):
+    data1 = read_latest_from_port(ser_res)
+    #data1 = "0,0"
     # Read data from the second serial port
-    if (ser2):
-        data2 = read_latest_from_port(ser2)
+    if (ser_temp):
+        data2 = read_latest_from_port(ser_temp)
     else:
         data2 = "0,0"
 
@@ -167,9 +181,16 @@ def just_read_the_serial(ser,ser2,output_filename):
 
 def main():
     # open serial ports
-    ser, ser2 = initialize_serial()
+    ser_res, ser_temp = initialize_serial()
 
-    give_arduino_parameters(ser2) # empty the temperature serial port
+    # Available modes
+    # 1. cycle between given range
+    # 2. cycle between given range, but stop for 30s at each degree increment and decrement ("temperature stairs")
+    # 3. constant temperature (uses the heat_cycle_range[0] value)
+    mode = 1
+    heat_cycle_range = (30,40)
+
+    give_arduino_parameters(ser_temp, mode, heat_cycle_range) # empty the temperature serial port
 
     #get outputfile name
     output_filename = get_output_filename()
@@ -185,7 +206,7 @@ def main():
     #plt.show()
 
     while True:
-        just_read_the_serial(ser, ser2, output_filename)
+        just_read_the_serial(ser_res, ser_temp, output_filename)
 
     #sleep(10)
 
