@@ -18,7 +18,7 @@ const int relay_pin = 11;
 // PID setup
 double Setpoint;
 double Output;
-double Kp = 60, Ki = 37, Kd = 32;
+double Kp = 100, Ki = 37, Kd = 40;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Parameters for temperature control logic
@@ -28,9 +28,9 @@ int lowerRange;
 int upperRange;
 
 // mode 2 logic
-time_t current_time;
-time_t last_transition_time = time(NULL);
-int transition_interval = 30; //seconds
+unsigned long current_time = 0;
+unsigned long last_transition_time = 0;
+unsigned long transition_interval = 60000; //60s
 static int direction = 1; // increase of decrease temperature?
 
 void parseTemperatureRange(String inputString) {
@@ -130,6 +130,7 @@ void setup() {
   // parse
   parseTemperatureRange(stringVariable);
   Setpoint = lowerRange;
+
 }
 
 void loop() {
@@ -155,7 +156,7 @@ void loop() {
 
     case 2:
       // Transition temperature in steps with a pause between each step
-        current_time = time(NULL);
+        current_time = millis();
 
         // Check if it's time to transition to the next setpoint
         if (current_time - last_transition_time >= transition_interval) {
@@ -190,5 +191,5 @@ void loop() {
     analogWrite(relay_pin, 0);
   }
 
-  delay(500);
+  delay(100);
 }

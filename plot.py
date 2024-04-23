@@ -9,13 +9,17 @@ from time import sleep
 
 
 def initialize_serial():
+    # list devices
+    # Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^USB' }
+
+
     # Set up the serial connection (adjust the port and baud rate according to your setup)
     #ser_res = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
-    ser_res = serial.Serial('COM4', 115200) # ser_res is resistance
+    ser_res = serial.Serial('COM8', 115200) # ser_res is resistance
     #ser_res = None
     try:
         #ser_temp = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
-        ser_temp = serial.Serial('COM14', 115200) # ser_temp is temperature
+        ser_temp = serial.Serial('COM9', 115200) # ser_temp is temperature
     except Exception:
         ser_temp = None
         print("error")
@@ -164,6 +168,7 @@ def just_read_the_serial(ser_res, ser_temp, output_filename):
         print(f"Failed to convert data2 to float: {data2}")
 
     try:
+        # resistance
         parts1 = data1.split(',')
         y1 = float(parts1[0])  # First serial port data
     except ValueError as e:
@@ -171,7 +176,7 @@ def just_read_the_serial(ser_res, ser_temp, output_filename):
         print(f"Failed to convert data1 to float: {data1}")
 
 
-    results_to_excel(y1, y2, output_filename)
+    results_to_excel(y2, y1, output_filename)
 
     print(y1, y2)
 
@@ -187,8 +192,8 @@ def main():
     # 1. cycle between given range
     # 2. cycle between given range, but stop for 30s at each degree increment and decrement ("temperature stairs")
     # 3. constant temperature (uses the heat_cycle_range[0] value)
-    mode = 1
-    heat_cycle_range = (30,40)
+    mode = 3
+    heat_cycle_range = (40,50)
 
     give_arduino_parameters(ser_temp, mode, heat_cycle_range) # empty the temperature serial port
 
