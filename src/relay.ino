@@ -18,7 +18,7 @@ const int relay_pin = 11;
 // PID setup
 double Setpoint;
 double Output;
-double Kp = 100, Ki = 37, Kd = 40;
+double Kp = 60, Ki = 37, Kd = 32;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Parameters for temperature control logic
