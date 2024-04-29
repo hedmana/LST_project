@@ -13,16 +13,19 @@ def initialize_serial():
     # Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^USB' }
 
 
-    # Set up the serial connection (adjust the port and baud rate according to your setup)
-    #ser_res = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
-    ser_res = serial.Serial('COM8', 115200) # ser_res is resistance
-    #ser_res = None
     try:
-        #ser_temp = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
+      # Set up the serial connection (adjust the port and baud rate according to your setup)
+      #ser_res = serial.Serial('/dev/cu.usbserial-1110', 115200)  # Update to your serial
+      ser_res = serial.Serial('COM8', 115200) # ser_res is resistance
+    except Exception:
+      ser_res = None
+      print("error ser_res")
+    try:
+        #ser_temp = serial.Serial('/dev/cu.usbmodem11401', 115200)  # Update to your second serial port
         ser_temp = serial.Serial('COM9', 115200) # ser_temp is temperature
     except Exception:
         ser_temp = None
-        print("error")
+        print("error ser_teml")
 
     return ser_res, ser_temp
 
@@ -53,60 +56,26 @@ def results_to_excel(temp, res, output_filename):
         writer.writerow([current_time, temp, res])
 
 # This function is called periodically by FuncAnimation
-def animate(i, ser_res, ser_temp, index, x_data, y1_data, y2_data, ax1, ax2, output_filename):
-    print("animate begins")
-    # Read data from the first serial port
-    data1 = read_latest_from_port(ser_res)
-    print("data1 ", data1)
-    # Read data from the second serial port
-    if (ser_temp):
-      data2 = read_latest_from_port(ser_temp)
-      print("data2 ",data2 )
-    else: 
-        data2 = "0,0"
-    
-    try:
-        parts2 = data2.split(',')
-        y2 = float(parts2[0])  # First serial port data
-    except ValueError as e:
-        y2 = float(0) # First serial port data
-        print(f"Failed to convert data2 to float: {data2}")
+def animate(i, ser_res, ser_temp, output_filename, x_data, y1_data, y2_data, ax1, ax2):
 
-    try:
-        parts1 = data1.split(',')
-        y1 = float(parts1[0])  # First serial port data
-    except ValueError as e:
-        y1 = float(0) # First serial port data
-        print(f"Failed to convert data1 to float: {data1}")
+    y1, y2 = just_read_the_serial(ser_res, ser_temp, output_filename)
 
-
-    # Skip non-positive values if using a log scale
-    if y1 <= 10 or y2 <= 10 or y1 > 100 or y2 > 200:
-        print("return")
-        return
-
-    results_to_excel(y1,y2, output_filename)
-
-    print(y1, y2)
-
-    x = next(index)
-    x_data.append(x)
-    y1_data.append(y1)
-    y2_data.append(y2)
-    
-    ax1.clear()
-    ax2.clear()
-    
-    # Plotting on the primary y-axis
-    ax1.plot(x_data, y1_data, 'g-')
-    # Plotting on the secondary y-axis
-    ax2.plot(x_data, y2_data, 'b-')
-    
-    # Optionally, set y-axis labels
-    ax1.set_ylabel('Resistance', color='g')
-    ax2.set_ylabel('Temp', color='b')
-
-    print("animate ends")
+    if i == 0 or (abs(y2 - y2_data[-1]) < 1 and abs(y1 - y1_data[-1]) < 1): 
+      x_data.append(i)
+      y1_data.append(y1)
+      y2_data.append(y2)
+      
+      ax1.clear()
+      ax2.clear()
+      
+      # Plotting on the primary y-axis
+      ax1.plot(x_data, y1_data, 'g-')
+      # Plotting on the secondary y-axis
+      ax2.plot(x_data, y2_data, 'b-')
+      
+      # Optionally, set y-axis labels
+      ax1.set_ylabel('Resistance', color='g')
+      ax2.set_ylabel('Temp', color='b')
 
     
 
@@ -175,10 +144,10 @@ def just_read_the_serial(ser_res, ser_temp, output_filename):
         y1 = float(0)  # First serial port data
         print(f"Failed to convert data1 to float: {data1}")
 
-
     results_to_excel(y2, y1, output_filename)
 
     print(y1, y2)
+    return y1, y2
 
 
 
@@ -192,8 +161,8 @@ def main():
     # 1. cycle between given range
     # 2. cycle between given range, but stop for 30s at each degree increment and decrement ("temperature stairs")
     # 3. constant temperature (uses the heat_cycle_range[0] value)
-    mode = 3
-    heat_cycle_range = (40,50)
+    mode = 2
+    heat_cycle_range = (35,40)
 
     give_arduino_parameters(ser_temp, mode, heat_cycle_range) # empty the temperature serial port
 
@@ -206,12 +175,13 @@ def main():
     x_data, y1_data, y2_data = [], [], []
     index = count()
 
+   
     # Create an animation by repeatedly calling the animate function every 1000 ms
-    #ani = animation.FuncAnimation(fig, animate, fargs= [ser, ser2, index, x_data, y1_data, y2_data, ax1, ax2, output_filename], interval=10)
-    #plt.show()
 
-    while True:
-        just_read_the_serial(ser_res, ser_temp, output_filename)
+    ani = animation.FuncAnimation(fig, animate, fargs= [ser_res, ser_temp, output_filename, x_data, y1_data, y2_data, ax1, ax2], interval=10)
+    plt.show()
+
+
 
     #sleep(10)
 
