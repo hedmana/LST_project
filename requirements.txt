@@ -11,5 +11,5 @@ pillow==10.3.0
 pyparsing==3.1.2
 pyserial==3.5
 python-dateutil==2.9.0.post0
-PyYAML==6.0.1w
+PyYAML==6.0.1
 six==1.16.0
