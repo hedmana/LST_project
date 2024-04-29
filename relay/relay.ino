@@ -18,7 +18,7 @@ const int relay_pin = 11;
 // PID setup
 double Setpoint;
 double Output;
-double Kp = 100, Ki = 37, Kd = 40;
+double Kp = 120, Ki = 12, Kd = 40;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Parameters for temperature control logic
@@ -72,7 +72,7 @@ void setup() {
 
   while (bmp.begin() != BMP::eStatusOK) {
     //Serial.println("bmp begin faild");
-    delay(2000);
+    delay(200);
   }
   //Serial.println("bmp begin success");
   delay(100);
@@ -82,8 +82,9 @@ void setup() {
   //
   Setpoint = 35.0;  // Desired temperature
 
-  myPID.SetMode(AUTOMATIC);       // Turn the PID on
+  
   myPID.SetOutputLimits(0, 255);  // Limits output to between 0 and 100%
+  myPID.SetSampleTime(100);
 
 
   // select which mode to execute and get temperature range
@@ -131,6 +132,7 @@ void setup() {
   parseTemperatureRange(stringVariable);
   Setpoint = lowerRange;
 
+  myPID.SetMode(AUTOMATIC);       // Turn the PID on
 }
 
 void loop() {
