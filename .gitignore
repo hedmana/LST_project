@@ -3,3 +3,5 @@
 *.csv
 *.png
 .venv
+.ipynb_checkpoints
+!reports/*.csv
