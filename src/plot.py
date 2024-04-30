@@ -15,14 +15,14 @@ def initialize_serial():
 
     try:
       # Set up the serial connection (adjust the port and baud rate according to your setup)
-      #ser_res = serial.Serial('/dev/cu.usbserial-1110', 115200)  # Update to your serial
-      ser_res = serial.Serial('COM8', 115200) # ser_res is resistance
+      ser_res = serial.Serial('/dev/cu.usbserial-2140', 115200)  # Update to your serial
+      #ser_res = serial.Serial('COM8', 115200) # ser_res is resistance
     except Exception:
       ser_res = None
       print("error ser_res")
     try:
-        #ser_temp = serial.Serial('/dev/cu.usbmodem11401', 115200)  # Update to your second serial port
-        ser_temp = serial.Serial('COM9', 115200) # ser_temp is temperature
+        ser_temp = serial.Serial('/dev/cu.usbmodem21101', 115200)  # Update to your second serial port
+        #ser_temp = serial.Serial('COM9', 115200) # ser_temp is temperature
     except Exception:
         ser_temp = None
         print("error ser_teml")
@@ -144,10 +144,20 @@ def just_read_the_serial(ser_res, ser_temp, output_filename):
         y1 = float(0)  # First serial port data
         print(f"Failed to convert data1 to float: {data1}")
 
+    x0 = 30
+    y0 = 38
+    x = 101.423
+    y = 101.7
+
+    a = (y0-x0) / (y-x)
+    b = y0 - (((y0-x0)*y)/(y-x))
+
+    y_calc = y1 * a + b
+
     results_to_excel(y2, y1, output_filename)
 
-    print(y1, y2)
-    return y1, y2
+    print(y1, y2, y_calc)
+    return y_calc, y2
 
 
 
@@ -161,8 +171,8 @@ def main():
     # 1. cycle between given range
     # 2. cycle between given range, but stop for 30s at each degree increment and decrement ("temperature stairs")
     # 3. constant temperature (uses the heat_cycle_range[0] value)
-    mode = 2
-    heat_cycle_range = (35,40)
+    mode = 3
+    heat_cycle_range = (32,38)
 
     give_arduino_parameters(ser_temp, mode, heat_cycle_range) # empty the temperature serial port
 

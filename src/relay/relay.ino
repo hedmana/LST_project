@@ -18,7 +18,7 @@ const int relay_pin = 11;
 // PID setup
 double Setpoint;
 double Output;
-double Kp = 120, Ki = 12, Kd = 40;
+double Kp = 450, Ki = 70, Kd = 100;
 PID myPID(&t, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 // Parameters for temperature control logic
@@ -84,7 +84,7 @@ void setup() {
 
   
   myPID.SetOutputLimits(0, 255);  // Limits output to between 0 and 100%
-  myPID.SetSampleTime(100);
+  myPID.SetSampleTime(200);
 
 
   // select which mode to execute and get temperature range
